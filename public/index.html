@@ -23,11 +23,16 @@
     .badge.unknown { background: #f3f4f6; color: #374151; }
     .summary { margin: 16px 0; padding: 12px; background: #f9fafb; border-radius: 6px; }
     .example { color: #2563eb; cursor: pointer; text-decoration: underline; margin-right: 12px; font-size: 13px; }
+    #quota-banner { display: inline-block; padding: 6px 14px; margin-bottom: 18px; border-radius: 999px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #1e293b, #334155); color: #e2e8f0; border: 1px solid #475569; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: background 0.25s ease, color 0.25s ease; }
+    #quota-banner.warn { background: linear-gradient(135deg, #92400e, #c2410c); color: #ffedd5; border-color: #c2410c; }
+    #quota-banner.over { background: linear-gradient(135deg, #7f1d1d, #b91c1c); color: #fee2e2; border-color: #b91c1c; }
+    #quota-banner .label { opacity: 0.8; margin-right: 4px; font-weight: 500; }
   </style>
 </head>
 <body>
   <h1>🛡️ AI 防幻觉核查工具</h1>
   <div class="subtitle">把 AI 回答贴进来,自动拆事实点 + 联网核查,标红标绿。</div>
+  <div id="quota-banner"><span class="label">今日用量</span><span id="quota-used">0</span> / <span id="quota-limit">50</span> · 免费版</div>
 
   <textarea id="input" placeholder="例如:珠穆朗玛峰高 8848 米,长江是亚洲最长的河流,牛顿在 1900 年发明了电话..." onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();document.getElementById('submitBtn').click();}"></textarea>
   <div>
@@ -64,6 +69,26 @@
       return '⚪ 未知';
     }
 
+    const banner = document.getElementById('quota-banner');
+    const qUsed = document.getElementById('quota-used');
+    const qLimit = document.getElementById('quota-limit');
+    function paintBanner(used, limit) {
+      qUsed.textContent = String(used);
+      qLimit.textContent = String(limit);
+      const ratio = limit > 0 ? used / limit : 1;
+      banner.classList.toggle('warn', ratio >= 0.6 && ratio < 1);
+      banner.classList.toggle('over', ratio >= 1);
+    }
+    async function refreshAccount() {
+      try {
+        const r = await fetch('/api/account');
+        if (!r.ok) return;
+        const a = await r.json();
+        paintBanner(a.quota_used || 0, a.quota_limit || 50);
+      } catch (_) {}
+    }
+    refreshAccount();
+
     btn.addEventListener('click', async () => {
       const text = input.value.trim();
       if (!text) { status.textContent = '请输入内容'; return; }
@@ -80,6 +105,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text })
         });
+        const rem = resp.headers.get('X-RateLimit-Remaining');
+        const lim = resp.headers.get('X-RateLimit-Limit');
+        if (lim) {
+          const limit = parseInt(lim, 10) || 50;
+          const remaining = rem !== null ? parseInt(rem, 10) : 0;
+          paintBanner(Math.max(0, limit - remaining), limit);
+        }
         const data = await resp.json();
         if (!resp.ok) { status.textContent = '错误: ' + (data.error || resp.statusText); return; }
         const results = data.results || [];

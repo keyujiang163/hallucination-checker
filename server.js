@@ -7,6 +7,7 @@ const axios = require('axios');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const { searchWithProvider } = require('./searchProviders');
+const { requireQuota } = require('./quota');
 
 const app = express();
 const PORT = process.env.PORT || 3737;
@@ -257,7 +258,7 @@ app.get('/api/demo', (req, res) => {
 });
 
 // Main fact-check endpoint
-app.post('/api/check', apiLimiter, async (req, res) => {
+app.post('/api/check', apiLimiter, requireQuota('free'), async (req, res) => {
   const text = (req.body && req.body.text ? String(req.body.text) : '').trim();
   if (!text) return res.status(400).json({ error: 'text is required' });
 
@@ -411,6 +412,62 @@ app.post('/api/webhook/stripe', express.raw({ type: 'application/json' }), (req,
       console.error(`[stripe webhook] unhandled_type=${event.type}`);
   }
   return res.json({ received: true, type: event.type });
+});
+
+// --- Account & Billing Portal (day 2) ---
+// Demo-mode: IP doubles as user_id. When real auth lands, swap for req.user.id.
+// Customer mapping (ip -> stripe customer) is not persisted yet; once the webhook
+// stores customer IDs we'll hydrate these endpoints from that table.
+
+// GET /api/account — returns plan + quota usage + (optional) stripe customer id.
+app.get('/api/account', (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.ip || req.socket.remoteAddress || 'unknown';
+  const today = new Date().toISOString().slice(0, 10);
+  const { loadQuota } = require('./quota');
+  const db = loadQuota();
+  const entry = db[ip] || { date: today, count: 0 };
+  const used = entry.date === today ? entry.count : 0;
+  // Demo: no real Stripe customer bound yet (webhook will populate once shipped).
+  res.json({
+    user_id: ip,
+    customer_id: null,
+    plan: 'free',
+    quota_used: used,
+    quota_limit: 50
+  });
+});
+
+// POST /api/portal — opens Stripe Billing Portal for the current customer.
+// Without STRIPE_SECRET, returns a stub URL so the UI flow is testable in dev.
+app.post('/api/portal', async (req, res) => {
+  try {
+    const customer = (req.body && req.body.customer_id) || null;
+    const stripe = getStripe();
+    if (!stripe) {
+      return res.json({
+        url: `https://billing.stripe.com/test_portal_stub?customer=${encodeURIComponent(customer || 'anonymous')}`,
+        stub: true,
+        message: 'STRIPE_SECRET not configured; returning stub URL.'
+      });
+    }
+    if (!customer) {
+      return res.status(400).json({
+        error: 'no_customer',
+        message: 'No Stripe customer bound to this session yet.'
+      });
+    }
+    const session = await stripe.billingPortal.sessions.create({
+      customer,
+      return_url: `${SITE_URL}/?portal=return`
+    });
+    return res.json({ url: session.url, sessionId: session.id });
+  } catch (err) {
+    const status = err && err.statusCode ? err.statusCode : 500;
+    const rawType = err && err.type ? String(err.type) : 'stripe_error';
+    console.error(`[stripe portal] type=${rawType} status=${status} msg=${String(err.message || err).slice(0, 200)}`);
+    return res.status(status).json({ error: 'portal_create_failed', type: rawType });
+  }
 });
 
 app.listen(PORT, () => {
