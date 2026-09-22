@@ -16,41 +16,133 @@ const LLM_URL = 'https://api.minimax.chat/v1/text/chatcompletion_v2';
 const LLM_MODEL = process.env.LLM_MODEL || 'MiniMax-M3';
 const LLM_KEY = process.env.MINIMAX_API_KEY || '';
 
-// Split text into atomic claims using the LLM
+// Rule-based fallback splitter: no LLM, no keys, deterministic.
+// Returns an array of { claim: string } objects (compatible with JSON array shape).
+function fallbackSplitClaims(text) {
+  if (!text || typeof text !== 'string') return [];
+  // Detect CJK vs Latin: if any CJK char present, treat as Chinese
+  const hasCJK = /[\u4e00-\u9fff]/.test(text);
+  let pieces;
+  if (hasCJK) {
+    // Split on Chinese sentence boundaries: 。 ! ? ；
+    pieces = text.split(/[。！？；]+/);
+  } else {
+    // English: split on . ! ? ; followed by uppercase letter or newline/end
+    pieces = text.split(/(?<=[.!?;])\s+(?=[A-Z])|(?<=[.!?;])\s*$/m);
+    // Also try a simpler split if the lookbehind yielded nothing
+    if (pieces.length <= 1) pieces = text.split(/[.!?;]+\s*/);
+  }
+  // Clean: trim, drop empties
+  let cleaned = pieces
+    .map(s => (s || '').trim())
+    .filter(s => s.length > 0);
+  // Truncate any over 200 chars by comma split (CJK or Latin)
+  const out = [];
+  for (const seg of cleaned) {
+    if (seg.length <= 200) {
+      out.push({ claim: seg });
+    } else {
+      const sub = hasCJK
+        ? seg.split(/[,,]+/)
+        : seg.split(/,\s*/);
+      for (const s of sub) {
+        const t = (s || '').trim();
+        if (t.length > 0 && t.length <= 200) out.push({ claim: t });
+        else if (t.length > 200) out.push({ claim: t.substring(0, 200) });
+      }
+    }
+  }
+  // Cap at 5 claims, same as LLM path
+  return out.slice(0, 5);
+}
+
+// Split text into atomic claims. Tries LLM first; falls back to rules on any failure.
+// Always returns string[] so downstream code (searchDDG) keeps working unchanged.
 async function splitClaims(text) {
+  // If no key configured, skip LLM entirely
+  if (!LLM_KEY) {
+    const reason = 'no_api_key';
+    console.error(`[fallback] reason=${reason} input_len=${(text || '').length}`);
+    return fallbackSplitClaims(text).map(o => o.claim);
+  }
+
   const prompt = `从下面这段 AI 回答中拆出可独立验证的事实点。每条必须是一个具体断言,长度不超过 30 个汉字。
 严格只返回 JSON 数组,不要任何解释、不要 Markdown 代码块。例如:["地球是圆的","水的沸点是100度"]
 
 待拆文本:
 """${text}"""`;
 
-  const resp = await axios.post(LLM_URL, {
-    model: LLM_MODEL,
-    messages: [
-      { role: 'system', content: '你是一个严格的事实点拆分器,只输出 JSON 数组。' },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.2
-  }, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(LLM_KEY ? { 'Authorization': `Bearer ${LLM_KEY}` } : {})
-    },
-    timeout: 30000
-  });
-
-  const raw = resp.data?.choices?.[0]?.message?.content || '[]';
-  // Try to extract JSON array from the response
-  const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) return [];
   try {
-    const arr = JSON.parse(match[0]);
-    if (Array.isArray(arr)) {
-      return arr.filter(c => typeof c === 'string' && c.trim().length > 0).slice(0, 5);
+    const resp = await axios.post(LLM_URL, {
+      model: LLM_MODEL,
+      messages: [
+        { role: 'system', content: '你是一个严格的事实点拆分器,只输出 JSON 数组。' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${LLM_KEY}`
+      },
+      timeout: 30000
+    });
+
+    // Check API-level error code (some gateways use base_resp)
+    const baseStatus = resp.data && resp.data.base_resp && resp.data.base_resp.status_code;
+    if (baseStatus !== undefined && baseStatus !== 0) {
+      const reason = `llm_base_resp_${baseStatus}`;
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
     }
-    return [];
-  } catch (_) {
-    return [];
+
+    const choices = resp.data && resp.data.choices;
+    if (!Array.isArray(choices) || choices.length === 0) {
+      const reason = 'llm_empty_choices';
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
+    }
+
+    const raw = (choices[0].message && choices[0].message.content) || '[]';
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) {
+      const reason = 'llm_no_json_array';
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
+    }
+    let arr;
+    try {
+      arr = JSON.parse(match[0]);
+    } catch (e) {
+      const reason = 'llm_json_parse';
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
+    }
+    if (!Array.isArray(arr)) {
+      const reason = 'llm_not_array';
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
+    }
+    const strings = arr
+      .map(c => {
+        if (typeof c === 'string') return c.trim();
+        if (c && typeof c === 'object' && typeof c.claim === 'string') return c.claim.trim();
+        return '';
+      })
+      .filter(s => s.length > 0)
+      .slice(0, 5);
+    if (strings.length === 0) {
+      const reason = 'llm_empty_strings';
+      console.error(`[fallback] reason=${reason}`);
+      return fallbackSplitClaims(text).map(o => o.claim);
+    }
+    return strings;
+  } catch (err) {
+    // Never echo any key/token; only the error message + code.
+    const code = err && err.response && err.response.status;
+    const reason = `llm_exception_${code || (err && err.code) || 'unknown'}`;
+    console.error(`[fallback] reason=${reason}`);
+    return fallbackSplitClaims(text).map(o => o.claim);
   }
 }
 
@@ -79,6 +171,14 @@ async function searchDDG(query) {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'hallucination-checker', version: '0.1.0' });
+});
+
+// Demo route: hard-coded payload for E2E sanity checks. No LLM, no keys.
+app.get('/api/demo', (req, res) => {
+  res.json({
+    text: '珠穆朗玛峰高 8848 米,是世界最高峰。',
+    input2: '珠穆朗玛峰高 12000 米。'
+  });
 });
 
 // Main fact-check endpoint
