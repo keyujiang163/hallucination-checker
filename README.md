@@ -66,11 +66,71 @@ npm start
 
 ## Deploy
 
+### 一键部署包(给大陆用户)
+
+桌面预打包:`C:\Users\Administrator\Desktop\hallucination-checker.zip`(~30KB)
+- 包含 14 个公开文件,已剔除 `.env / hc_key.txt / *.log / 测试样本 / node_modules`
+- 解压后整个拖进 GitHub 上传区,或直接拖 Cloudflare Pages 后台
+
+### 上传到 GitHub(无需 push 也不需命令行)
+
+1. 解压 zip 到桌面 → 得到 `hallucination-checker\` 文件夹
+2. 浏览器打开 https://github.com/keyujiang163/hallucination-checker
+3. 点 **Add file** → **Upload files** → 把整个文件夹拖进去 → Commit
+4. 推送时**只选 commit,不要勾选 replace existing files**
+
+### 上传到 Cloudflare Pages(更快,zip 直接拖)
+
+1. 注册 https://dash.cloudflare.com/(有中文)
+2. Pages → Upload assets → 拖 zip → 自动识别 Dockerfile → Deploy
+3. 等 2-3 分钟,得到 `https://hc-xxx.pages.dev`
+
+### 海外平台一键 deploy 完整文档
+
 See [DEPLOY.md](./DEPLOY.md) for step-by-step instructions (Render / Fly.io / Local Docker).
 
-- Render Blueprint 2.0: `render.yaml` 已配置，Push 后关自动部署
+- Render Blueprint 2.0: `render.yaml` 已配置,push 后关自动部署
 - Stripe Webhook 配置见 DEPLOY.md
 - 环境变量 `sync: false` 的 key 需在 Dashboard 手动填
+
+## 海外售后(大陆老板专版)
+
+**核心结论:你不需要跟海外客服讲一句话**——所有用到的平台都有中文后台:
+
+| 故障 | 你的操作 | 自动化 / 后台代劳 |
+|---|---|---|
+| **服务挂了** | **0 步** —— Render 自动重启 | UptimeRobot 监控(免费),挂 5 分钟自动喊 |
+| **代码 bug** | 飞书群说一声 → Dev 子代理改 | git push → Render auto-deploy |
+| **支付失败 / 退款** | Stripe Dashboard 中文,一键退款 | Stripe 后台 |
+| **客户提问** | README FAQ + `hi@hc.xx` 邮箱 | 客户自助 |
+| **账单 / 订阅纠纷** | Stripe Dashboard 中文 | Stripe |
+| **大故障 / 数据丢失** | **0 步** —— 本地 git 完整 | 任何机器 `git clone` 拉走 |
+
+### 监控告警(免费)
+
+- [UptimeRobot](https://uptimerobot.com/) 注册 → 5 分钟间隔 GET `/api/health`
+- 挂掉自动邮件 / Telegram / Discord 通知
+- 设置一次,永久运行
+
+### Stripe / Render / Cloudflare 中文后台
+
+- Stripe: https://dashboard.stripe.com/(付款、退款、订阅、Webhook 全中文)
+- Render: https://dashboard.render.com/(日志、重启、env 全中文)
+- Cloudflare: https://dash.cloudflare.com/(域名、DNS、Pages 全中文)
+- GitHub: https://github.com/(中文,文件编辑直接网页操作)
+
+### 自助 debug 三板斧
+
+```powershell
+# 1. 看本地服务状态
+curl http://localhost:3737/api/health
+
+# 2. 看 Render 日志
+Render Dashboard → hallucination-checker → Logs → 实时
+
+# 3. 重启服务
+Render Dashboard → Manual Deploy → "Deploy latest commit"
+```
 
 ## 变现点 (B 端 SaaS 299 元/月)
 
