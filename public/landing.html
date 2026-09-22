@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Stop AI hallucinations. Verify any AI response against live web evidence in 3 seconds.">
+  <title>Stop AI Hallucinations — Hallucination Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Helvetica Neue", sans-serif;
+      background: #0a0a14;
+      color: #e6e6f0;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      padding: 32px 16px 48px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 56px;
+    }
+    .brand { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; }
+    .brand .dot { display: inline-block; width: 10px; height: 10px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+    .nav a { color: #b8b8d4; text-decoration: none; margin-left: 22px; font-size: 14px; }
+    .nav a:hover { color: #fff; }
+    .hero { text-align: center; padding: 48px 8px 32px; }
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 72px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      background: linear-gradient(135deg, #ffffff 0%, #c0c0ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 22px;
+    }
+    .hero p.lede {
+      font-size: clamp(16px, 2.4vw, 20px);
+      color: #a4a4c4;
+      max-width: 640px;
+      margin: 0 auto 36px;
+    }
+    .cta-primary {
+      display: inline-block;
+      padding: 16px 36px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 8px 28px rgba(118, 75, 162, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(118, 75, 162, 0.5); }
+    .cta-note { display: block; margin-top: 12px; color: #8a8ab0; font-size: 13px; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 80px 0 72px;
+    }
+    .card {
+      background: #13131f;
+      border: 1px solid #25253a;
+      border-radius: 14px;
+      padding: 28px 24px;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover { border-color: #667eea; transform: translateY(-3px); }
+    .card .icon { font-size: 36px; margin-bottom: 14px; display: block; }
+    .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .card p { color: #9898b8; font-size: 14px; line-height: 1.6; }
+    .trust {
+      border-top: 1px solid #1d1d2e;
+      padding-top: 32px;
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 36px;
+    }
+    .trust span { color: #8a8ab0; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+    .trust svg { opacity: 0.7; }
+    @media (max-width: 768px) {
+      .nav { margin-bottom: 32px; }
+      .nav .nav-links { display: none; }
+      .hero { padding: 24px 4px 12px; }
+      .features { grid-template-columns: 1fr; gap: 14px; margin: 56px 0 48px; }
+      .trust { gap: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <div class="brand"><span class="dot"></span>Hallucination Checker</div>
+      <div class="nav-links">
+        <a href="pricing.html">Pricing</a>
+        <a href="index.html">Try it</a>
+        <a href="https://github.com/keyujiang163/hallucination-checker" rel="noopener">GitHub</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>Stop AI Hallucinations</h1>
+      <p class="lede">Verify any AI response against live web evidence in <strong>3 seconds</strong>. Paste, click, get a red/green report on every claim.</p>
+      <a href="index.html" class="cta-primary">Try free — no signup</a>
+      <span class="cta-note">50 free checks · no credit card</span>
+    </section>
+
+    <section class="features">
+      <div class="card">
+        <span class="icon" aria-hidden="true">🔍</span>
+        <h3>Multi-source search</h3>
+        <p>Brave Search + Wikipedia + optional domain whitelists. Each claim is cross-checked against fresh, authoritative results — never relying on a single source.</p>
+      </div>
+      <div class="card">
+        <span class="icon" aria-hidden="true">⚡</span>
+        <h3>Reports in 3 seconds</h3>
+        <p>Parallel claim extraction and concurrent evidence fetching. Most responses are graded before you finish reading them — no waiting on slow pageloads.</p>
+      </div>
+      <div class="card">
+        <span class="icon" aria-hidden="true">💰</span>
+        <h3>From $9 / month</h3>
+        <p>Usage-based pricing that scales with your team. Free tier covers 50 checks/month. Cancel anytime, no lock-in, MIT-licensed core.</p>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Trust signals">
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/></svg>
+        Open source · MIT
+      </span>
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+        Stripe-secured billing
+      </span>
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        Powered by Brave + Anthropic
+      </span>
+    </section>
+  </div>
+</body>
+</html>

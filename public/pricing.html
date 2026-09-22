@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — Hallucination Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      background: #0a0a14;
+      color: #e6e6f0;
+      line-height: 1.55;
+      padding: 32px 16px 64px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 56px; }
+    .brand { font-size: 18px; font-weight: 700; }
+    .brand .dot { display: inline-block; width: 10px; height: 10px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+    .nav a { color: #b8b8d4; text-decoration: none; margin-left: 22px; font-size: 14px; }
+    .nav a:hover { color: #fff; }
+    .head { text-align: center; margin-bottom: 56px; }
+    .head h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 800; margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 0%, #c0c0ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .head p { color: #a4a4c4; font-size: 16px; max-width: 560px; margin: 0 auto; }
+    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 72px; }
+    .plan {
+      background: #13131f;
+      border: 1px solid #25253a;
+      border-radius: 16px;
+      padding: 32px 26px 30px;
+      display: flex; flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .plan:hover { transform: translateY(-3px); }
+    .plan.featured { border-color: #667eea; box-shadow: 0 8px 36px rgba(102, 126, 234, 0.18); position: relative; }
+    .plan.featured::before {
+      content: "Most popular";
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; letter-spacing: 0.4px;
+    }
+    .plan h2 { font-size: 18px; margin-bottom: 4px; }
+    .plan .price { font-size: 44px; font-weight: 800; margin: 14px 0 4px; }
+    .plan .price small { font-size: 14px; color: #8a8ab0; font-weight: 500; }
+    .plan .quota { color: #9898b8; font-size: 13px; margin-bottom: 22px; }
+    .plan ul { list-style: none; margin-bottom: 28px; flex: 1; }
+    .plan li { padding: 8px 0; color: #c8c8e0; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; }
+    .plan li::before { content: "✓"; color: #667eea; font-weight: 700; flex-shrink: 0; }
+    .plan a.cta {
+      display: block; text-align: center; padding: 12px 18px; border-radius: 10px; text-decoration: none;
+      font-weight: 600; font-size: 14px; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .plan a.cta.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; box-shadow: 0 6px 22px rgba(118, 75, 162, 0.32); }
+    .plan a.cta.primary:hover { transform: translateY(-2px); }
+    .plan a.cta.secondary { background: #1d1d2e; color: #e6e6f0; border: 1px solid #2d2d44; }
+    .plan a.cta.secondary:hover { background: #25253a; }
+    .faq { border-top: 1px solid #1d1d2e; padding-top: 36px; }
+    .faq h3 { text-align: center; font-size: 24px; margin-bottom: 28px; }
+    .faq-item { background: #13131f; border: 1px solid #25253a; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+    .faq-item summary {
+      padding: 18px 22px; cursor: pointer; font-weight: 600; font-size: 15px;
+      list-style: none; display: flex; justify-content: space-between; align-items: center;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after { content: "+"; color: #667eea; font-size: 22px; transition: transform 0.2s ease; }
+    .faq-item[open] summary::after { content: "−"; }
+    .faq-item p { padding: 0 22px 18px; color: #9898b8; font-size: 14px; line-height: 1.65; }
+    @media (max-width: 768px) {
+      .nav .nav-links { display: none; }
+      .plans { grid-template-columns: 1fr; gap: 16px; }
+      .head { margin-bottom: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <div class="brand"><span class="dot"></span>Hallucination Checker</div>
+      <div class="nav-links">
+        <a href="landing.html">Home</a>
+        <a href="index.html">Try it</a>
+        <a href="https://github.com/keyujiang163/hallucination-checker" rel="noopener">GitHub</a>
+      </div>
+    </div>
+
+    <header class="head">
+      <h1>Pricing built for trust</h1>
+      <p>Pay per check, not per seat. Every plan ships with the same evidence-grade engine — just different scale and integrations.</p>
+    </header>
+
+    <section class="plans">
+      <div class="plan">
+        <h2>Free</h2>
+        <div class="price">$0<small> /mo</small></div>
+        <div class="quota">50 checks · 1 user</div>
+        <ul>
+          <li>50 fact-checks per month</li>
+          <li>1 team member</li>
+          <li>Brave Search + Wikipedia</li>
+          <li>Red/green claim report</li>
+        </ul>
+        <a href="/api/checkout/create-session?plan=free" class="cta secondary">Start free</a>
+      </div>
+
+      <div class="plan featured">
+        <h2>Pro</h2>
+        <div class="price">$9<small> /mo</small></div>
+        <div class="quota">1,000 checks · 1 user</div>
+        <ul>
+          <li>1,000 checks per month</li>
+          <li>All Pro search providers</li>
+          <li>Anthropic LLM claim extraction</li>
+          <li>Custom domain whitelists</li>
+        </ul>
+        <a href="/api/checkout/create-session?plan=pro" class="cta primary">Upgrade to Pro</a>
+      </div>
+
+      <div class="plan">
+        <h2>Team</h2>
+        <div class="price">$49<small> /mo</small></div>
+        <div class="quota">10,000 checks · 5 users</div>
+        <ul>
+          <li>10,000 checks per month</li>
+          <li>5 team seats included</li>
+          <li>Industry knowledge base</li>
+          <li>Priority email support</li>
+        </ul>
+        <a href="/api/checkout/create-session?plan=team" class="cta secondary">Start Team trial</a>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h3>Frequently asked</h3>
+      <details class="faq-item">
+        <summary>Can I get a refund?</summary>
+        <p>Yes. If Pro or Team isn't a fit within 14 days of your first charge, email us and we'll refund the full amount — no forms, no friction. You can also cancel any time from your dashboard and you'll keep access through the end of the current billing period.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do you handle data and privacy?</summary>
+        <p>We never train on your inputs. Each check is processed in real time, the prompt and evidence are discarded after the report is returned, and full request logs are opt-in. Billing is handled by Stripe — we never see your card number — and the open-source core means you can audit exactly what's running on our servers.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I add custom search sources?</summary>
+        <p>Pro plans can define domain whitelists and trusted feeds (PubMed, SEC filings, internal wikis via webhook). Team plans unlock per-tenant knowledge bases — drop in PDFs or URLs and we'll embed them into the evidence pool. Custom enterprise connectors are available on request.</p>
+      </details>
+    </section>
+  </div>
+</body>
+</html>
