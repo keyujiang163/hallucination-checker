@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "created": "2026-09-22T22:58+08:00",
+  "reason": "boss approved auto-reminder for non-GFW push + metadata PATCH",
+  "remote": "https://github.com/keyujiang163/hallucination-checker.git",
+  "branch": "main",
+  "unpushed_commits": ["d8f472c", "954f8f3"],
+  "metadata_pending": {
+    "description": "Lightweight AI hallucination checker: split claims + web-search verify + green/red badges.",
+    "homepage": "https://github.com/keyujiang163/hallucination-checker#readme",
+    "topics": ["hallucination-checker", "fact-check", "llm", "ai-safety", "verification", "nodejs", "express"],
+    "license": "MIT"
+  },
+  "blockers_observed": [
+    "git push: TCP RST / Operation too slow (4 proxies tried)",
+    "PATCH repo: 403 due to PAT missing metadata:write scope"
+  ],
+  "fix_commands": [
+    "git push https://gh-proxy.com/https://github.com/keyujiang163/hallucination-checker.git main",
+    "gh api --method PATCH /repos/keyujiang163/hallucination-checker -f description=... -f 'topics[]=hallucination-checker' ... -f license=MIT"
+  ]
+}

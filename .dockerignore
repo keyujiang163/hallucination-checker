@@ -9,3 +9,5 @@ req*.json
 test-*.js
 write-req.js
 data/
+.pending-remote.json
+finalize-remote.ps1

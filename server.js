@@ -19,13 +19,101 @@ const apiLimiter = rateLimit({
   message: { error: 'rate_limited', message: '请求过快,1 分钟最多 30 次' }
 });
 
-app.use(express.json({ limit: '1mb' }));
+// Body parsing: json for all routes EXCEPT /api/webhook/stripe (Stripe needs raw bytes
+// for signature verification). Defer json parse so the webhook route can capture raw.
+app.use((req, res, next) => {
+  if (req.path === '/api/webhook/stripe') return next();
+  return express.json({ limit: '1mb' })(req, res, next);
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
-// MiniMax LLM endpoint (OpenAI-compatible)
-const LLM_URL = 'https://api.minimax.chat/v1/text/chatcompletion_v2';
-const LLM_MODEL = process.env.LLM_MODEL || 'MiniMax-M3';
-const LLM_KEY = process.env.MINIMAX_API_KEY || '';
+// --- Billing (Stripe) ---
+// Plans are defined statically here; switch to DB when we add user accounts.
+const PRICING_PLANS = [
+  { plan: 'free', price: 0, quota: 50 },
+  { plan: 'pro', price: 9, quota: 1000 },
+  { plan: 'team', price: 49, quota: 10000 }
+];
+
+// Lazy-loaded Stripe client. We don't touch stripe.* on import if STRIPE_SECRET is absent
+// so dev mode (no secret) still boots cleanly.
+const STRIPE_SECRET = process.env.STRIPE_SECRET || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const SITE_URL = process.env.SITE_URL || `http://localhost:${PORT}`;
+let stripeClient = null;
+function getStripe() {
+  if (stripeClient !== null) return stripeClient;
+  if (!STRIPE_SECRET) return null;
+  // require lazily so missing SECRET doesn't crash dev
+  const Stripe = require('stripe');
+  stripeClient = new Stripe(STRIPE_SECRET, { apiVersion: '2024-09-30.acacia' });
+  return stripeClient;
+}
+
+// LLM provider abstraction. Each entry tells the request layer:
+// - baseUrl: REST endpoint (no trailing slash) for chat completions
+// - model: default model id (overridable via env LLM_MODEL_<PROVIDER>)
+// - keyEnv: which process.env var carries the API key
+// - headers(promptMessages): returns the headers object for fetch
+// - payload(model, messages, temperature): returns the JSON body to POST
+// Abstract only — only the active provider is actually invoked. Others defined
+// but never called until provider is switched at runtime via LLM_PROVIDER env.
+const LLM_PROVIDER = (process.env.LLM_PROVIDER || 'minimax').toLowerCase();
+
+const LLM_PROVIDERS = {
+  minimax: {
+    baseUrl: 'https://api.minimax.chat/v1/text/chatcompletion_v2',
+    model: process.env.LLM_MODEL || 'MiniMax-M3',
+    keyEnv: 'MINIMAX_API_KEY',
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.MINIMAX_API_KEY || ''}`
+    }),
+    payload: (model, messages, temperature) => ({ model, messages, temperature })
+  },
+  anthropic: {
+    baseUrl: 'https://api.anthropic.com/v1/messages',
+    model: process.env.LLM_MODEL_ANTHROPIC || 'claude-3-5-sonnet-latest',
+    keyEnv: 'ANTHROPIC_API_KEY',
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+      'anthropic-version': '2023-06-01'
+    }),
+    payload: (model, messages, temperature) => ({
+      model,
+      max_tokens: 1024,
+      messages: messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({ role: m.role, content: m.content }))
+    })
+  },
+  openai: {
+    baseUrl: 'https://api.openai.com/v1/chat/completions',
+    model: process.env.LLM_MODEL_OPENAI || 'gpt-4o-mini',
+    keyEnv: 'OPENAI_API_KEY',
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`
+    }),
+    payload: (model, messages, temperature) => ({ model, messages, temperature })
+  },
+  deepseek: {
+    baseUrl: 'https://api.deepseek.com/v1/chat/completions',
+    model: process.env.LLM_MODEL_DEEPSEEK || 'deepseek-chat',
+    keyEnv: 'DEEPSEEK_API_KEY',
+    headers: () => ({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY || ''}`
+    }),
+    payload: (model, messages, temperature) => ({ model, messages, temperature })
+  }
+};
+
+const LLM_ACTIVE = LLM_PROVIDERS[LLM_PROVIDER];
+const LLM_URL = LLM_ACTIVE ? LLM_ACTIVE.baseUrl : LLM_PROVIDERS.minimax.baseUrl;
+const LLM_MODEL = LLM_ACTIVE ? LLM_ACTIVE.model : LLM_PROVIDERS.minimax.model;
+const LLM_KEY = process.env[LLM_ACTIVE ? LLM_ACTIVE.keyEnv : 'MINIMAX_API_KEY'] || '';
 
 // Rule-based fallback splitter: no LLM, no keys, deterministic.
 // Returns an array of { claim: string } objects (compatible with JSON array shape).
@@ -84,20 +172,18 @@ async function splitClaims(text) {
 """${text}"""`;
 
   try {
-    const resp = await axios.post(LLM_URL, {
-      model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: '你是一个严格的事实点拆分器,只输出 JSON 数组。' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.2
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LLM_KEY}`
-      },
-      timeout: 30000
-    });
+    const messages = [
+      { role: 'system', content: '你是一个严格的事实点拆分器,只输出 JSON 数组。' },
+      { role: 'user', content: prompt }
+    ];
+    const resp = await axios.post(
+      LLM_URL,
+      LLM_ACTIVE.payload(LLM_MODEL, messages, 0.2),
+      {
+        headers: LLM_ACTIVE.headers(),
+        timeout: 30000
+      }
+    );
 
     // Check API-level error code (some gateways use base_resp)
     const baseStatus = resp.data && resp.data.base_resp && resp.data.base_resp.status_code;
@@ -216,6 +302,115 @@ app.post('/api/check', apiLimiter, async (req, res) => {
   }
 
   res.json({ results, claimCount: results.length });
+});
+
+// --- Billing API ---
+
+// GET /api/pricing — static plan catalog. Future: read from Stripe Products API.
+app.get('/api/pricing', (req, res) => {
+  res.json(PRICING_PLANS);
+});
+
+// POST /api/checkout/create-session — create a Stripe Checkout session.
+// Body: { plan: 'free' | 'pro' | 'team' }
+// When STRIPE_SECRET is set, calls stripe.checkout.sessions.create for real.
+// Without a secret, returns a fixed stub URL so the UI flow can be dev-tested.
+app.post('/api/checkout/create-session', apiLimiter, async (req, res) => {
+  try {
+    const plan = String((req.body && req.body.plan) || '').toLowerCase();
+    const found = PRICING_PLANS.find(p => p.plan === plan);
+    if (!found) {
+      return res.status(400).json({ error: 'invalid_plan', message: `unknown plan "${plan}"` });
+    }
+    if (plan === 'free') {
+      return res.json({ url: `${SITE_URL}/?plan=free`, stub: true });
+    }
+    const stripe = getStripe();
+    if (!stripe) {
+      // Dev fallback: no STRIPE_SECRET configured. Return a stub URL.
+      return res.json({
+        url: `https://checkout.stripe.com/test_${plan}_stub`,
+        stub: true,
+        message: 'STRIPE_SECRET not configured; returning stub URL. Set STRIPE_SECRET in .env to enable real checkout.'
+      });
+    }
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          recurring: { interval: 'month' },
+          product_data: { name: `Hallucination Checker ${plan.toUpperCase()}` },
+          unit_amount: found.price * 100
+        },
+        quantity: 1
+      }],
+      success_url: `${SITE_URL}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${SITE_URL}/?checkout=cancelled`
+    });
+    return res.json({ url: session.url, sessionId: session.id });
+  } catch (err) {
+    // Never echo key/secret; only safe fields + status.
+    const status = err && err.statusCode ? err.statusCode : 500;
+    const rawType = err && err.type ? String(err.type) : 'stripe_error';
+    console.error(`[stripe create-session] type=${rawType} status=${status} msg=${String(err.message || err).slice(0, 200)}`);
+    return res.status(status).json({ error: 'checkout_create_failed', type: rawType });
+  }
+});
+
+// POST /api/webhook/stripe — receives Stripe events.
+// Signature verification is REAL and MUST run before trusting the payload.
+// When STRIPE_WEBHOOK_SECRET is missing, still attempts verification so the code path is
+// exercised in dev; in that case the header check is skipped but the constructEvent call
+// still runs against any incoming body+sig. (Stripe test events will fail without a real
+// secret, which is the correct behaviour — Stripe returns a signed event only after the
+// endpoint is configured in the dashboard.)
+app.post('/api/webhook/stripe', express.raw({ type: 'application/json' }), (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const rawBody = req.body; // Buffer because of express.raw
+  // Always log a marker; never echo the secret.
+  console.error(`[stripe webhook] received size=${rawBody && rawBody.length} sig=${sig ? 'present' : 'missing'} secret=${STRIPE_WEBHOOK_SECRET ? 'configured' : 'unset'}`);
+  if (!sig) {
+    return res.status(400).json({ error: 'missing_signature', message: 'Stripe-Signature header required' });
+  }
+  // Even when no secret is configured, we keep this code path so the contract is
+  // exercised. Without STRIPE_SECRET we cannot instantiate the SDK; surface that as a 400
+  // (configuration error) rather than letting it bypass verification silently.
+  const secret = STRIPE_WEBHOOK_SECRET || '';
+  const stripe = getStripe();
+  if (!stripe) {
+    return res.status(400).json({
+      error: 'webhook_not_configured',
+      message: 'STRIPE_SECRET missing; cannot verify signature'
+    });
+  }
+  if (!secret) {
+    return res.status(400).json({
+      error: 'webhook_secret_missing',
+      message: 'STRIPE_WEBHOOK_SECRET missing; cannot verify signature'
+    });
+  }
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+  } catch (err) {
+    console.error(`[stripe webhook] signature_failed msg=${String(err.message || err).slice(0, 200)}`);
+    return res.status(400).json({ error: 'invalid_signature', message: String(err.message || err).slice(0, 200) });
+  }
+  // Minimal event router — extend as subscriptions / invoices arrive.
+  switch (event.type) {
+    case 'checkout.session.completed':
+      console.error(`[stripe webhook] checkout.session.completed id=${event.data && event.data.object && event.data.object.id}`);
+      break;
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+      console.error(`[stripe webhook] ${event.type} id=${event.data && event.data.object && event.data.object.id}`);
+      break;
+    default:
+      console.error(`[stripe webhook] unhandled_type=${event.type}`);
+  }
+  return res.json({ received: true, type: event.type });
 });
 
 app.listen(PORT, () => {

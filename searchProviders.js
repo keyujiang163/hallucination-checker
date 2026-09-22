@@ -94,9 +94,70 @@ async function searchDDG(claim, opts = {}) {
   throw lastErr || new Error('searchDDG exhausted retries');
 }
 
-// Brave Search: needs BRAVE_API_KEY. Stub until configured.
+// Brave Search: needs BRAVE_API_KEY. Free tier 2000 req/month.
+// Uses native fetch (Node 18+). 8s timeout via AbortController.
+// On HTTP error or parse error, throws -> dispatcher catches and returns hasEvidence:false
+// with a [brave] error prefix.
 async function searchBrave(claim) {
-  throw new Error('brave not configured: set BRAVE_API_KEY in .env');
+  const apiKey = process.env.BRAVE_API_KEY;
+  if (!apiKey) {
+    throw new Error('brave_error: BRAVE_API_KEY not set');
+  }
+  const query = rewriteQuery(claim);
+  const url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=5';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Subscription-Token': apiKey,
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip'
+      },
+      signal: ctrl.signal
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    const isAbort = err && (err.name === 'AbortError' || err.code === 'ABORT_ERR');
+    throw new Error('brave_error: ' + (isAbort ? 'timeout after 8000ms' : (err && err.message) || 'fetch_failed'));
+  }
+  clearTimeout(timer);
+  if (!resp.ok) {
+    throw new Error('brave_error: ' + resp.status);
+  }
+  let data;
+  try {
+    data = await resp.json();
+  } catch (err) {
+    throw new Error('brave_error: invalid_json');
+  }
+  const web = data && data.web && Array.isArray(data.web.results) ? data.web.results : [];
+  if (web.length === 0) {
+    return { hasEvidence: false, evidence: 'No results from Brave Search.' };
+  }
+  const snippets = [];
+  for (const r of web) {
+    const desc = (r && r.description ? String(r.description) : '').trim();
+    const title = (r && r.title ? String(r.title) : '').trim();
+    const url = (r && r.url ? String(r.url) : '').trim();
+    if (!desc) continue;
+    const head = title ? `${title}: ` : '';
+    // Strip any URL fragment from description to keep evidence clean + bounded.
+    const cleanDesc = desc.replace(/https?:\/\/\S+/g, '').trim();
+    if (!cleanDesc) continue;
+    snippets.push((head + cleanDesc).slice(0, 240));
+    if (snippets.length >= 3) break;
+  }
+  if (snippets.length === 0) {
+    return { hasEvidence: false, evidence: 'No usable descriptions in Brave results.' };
+  }
+  return {
+    hasEvidence: true,
+    evidence: `[brave] ${snippets.join(' | ')}`,
+    provider: 'brave'
+  };
 }
 
 // Wikipedia: free, no key - but DNS-hijacked in mainland China by the GFW.

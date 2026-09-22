@@ -1,0 +1,27 @@
+﻿services:
+  - type: web
+    name: hallucination-checker
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    autoDeploy: false  # push 没通,先关
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3737
+      - key: SEARCH_PROVIDER
+        value: brave
+      - key: BRAVE_API_KEY
+        sync: false   # Render Dashboard 手动填
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: SITE_URL
+        value: https://hallucination-checker.onrender.com

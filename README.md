@@ -64,17 +64,13 @@ npm start
 - 单次请求最长 ~12 秒(2s × 5)
 - LLM 拆不出事实点时返回空数组
 
-## 部署
-老板自己 `npm start` 跑就行。零成本。
-后续接 SerpAPI / Google CSE 升级搜索质量。
-生产化时建议:加 Redis 缓存、加请求队列、加用户认证。
+## Deploy
 
-### Docker
-```bash
-docker build -t hallucination-checker .
-docker run -p 3737:3737 -e SEARCH_PROVIDER=brave -e BRAVE_API_KEY=... hallucination-checker
-```
-Deploy overseas (Render/Railway/Fly.io) to avoid mainland China DNS hijack.
+See [DEPLOY.md](./DEPLOY.md) for step-by-step instructions (Render / Fly.io / Local Docker).
+
+- Render Blueprint 2.0: `render.yaml` 已配置，Push 后关自动部署
+- Stripe Webhook 配置见 DEPLOY.md
+- 环境变量 `sync: false` 的 key 需在 Dashboard 手动填
 
 ## 变现点 (B 端 SaaS 299 元/月)
 
