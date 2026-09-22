@@ -138,6 +138,52 @@ stripe listen --forward-to localhost:3737/api/webhook/stripe
 
 ---
 
+## 运维手册(Ops Runbook)
+
+### UptimeRobot 免费监控(5 分钟,中文后台)
+
+注册 → https://uptimerobot.com/(有中文) → New Monitor:
+- Type: HTTP(s)
+- URL: `https://<your-domain>/api/health`
+- Interval: 5 minutes
+- Alert Contacts: 加你的邮箱(或 Telegram Bot)
+
+→ 挂 5 分钟自动邮件/Telegram 喊老板 + Render 自动重启。
+
+### Render 中文后台(dashboard.render.com)
+
+| 操作 | 路径 |
+|---|---|
+| 查日志 | hallucination-checker → Logs → 实时 |
+| 重启 | Manual Deploy → "Clear build cache & deploy" |
+| 改 env | Environment → 改 → Save Changes → 自动重启 |
+| 看 deploy 历史 | Events → 看每次 commit + 状态 |
+| 回滚 | Events → 选旧 deploy → "Rollback to here" |
+
+### Cloudflare Pages 中文后台(dash.cloudflare.com)
+
+| 操作 | 路径 |
+|---|---|
+| 看部署 | Workers & Pages → hc → Deployments |
+| 绑域名 | Custom domains → Add → 输入根域 → DNS 自动 |
+| 配 env | Settings → Environment variables → Add variable |
+| 看日志 | Logs → 实时 |
+
+### 故障树(从外到内排查)
+
+```
+服务挂了?
+├─ UptimeRobot 邮件来了? → 平台挂了,等自动恢复
+├─ 平台正常但 /api/health 200? → 误报,忽略
+└─ /api/health 不 200?
+   ├─ Render → Manual Deploy 强刷
+   ├─ CF Pages → 重 deploy 最新 commit
+   ├─ 都不行 → 看 Logs → grep "Error" → 改代码 → git push
+   └─ 还不行 → 飞书群喊 Dev 子代理
+```
+
+---
+
 ## 常见问题
 
 **Q: Build 失败，显示 `npm ERR`**  
