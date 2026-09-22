@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -12,6 +12,7 @@
     textarea { width: 100%; min-height: 120px; padding: 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; resize: vertical; font-family: inherit; }
     button { margin-top: 12px; padding: 10px 20px; background: #2563eb; color: white; border: 0; border-radius: 6px; font-size: 14px; cursor: pointer; }
     button:disabled { background: #9ca3af; cursor: not-allowed; }
+    @media (max-width: 600px) { button { width: 100%; } }
     .status { margin: 16px 0; color: #555; font-size: 14px; }
     table { width: 100%; border-collapse: collapse; margin-top: 16px; }
     th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; vertical-align: top; font-size: 14px; }
@@ -28,7 +29,7 @@
   <h1>🛡️ AI 防幻觉核查工具</h1>
   <div class="subtitle">把 AI 回答贴进来,自动拆事实点 + 联网核查,标红标绿。</div>
 
-  <textarea id="input" placeholder="例如:珠穆朗玛峰高 8848 米,长江是亚洲最长的河流,牛顿在 1900 年发明了电话..."></textarea>
+  <textarea id="input" placeholder="例如:珠穆朗玛峰高 8848 米,长江是亚洲最长的河流,牛顿在 1900 年发明了电话..." onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();document.getElementById('submitBtn').click();}"></textarea>
   <div>
     <span class="example" data-text="珠穆朗玛峰高 8848 米,是中国和尼泊尔的边境。">示例 1</span>
     <span class="example" data-text="爱因斯坦在 1921 年获得诺贝尔物理学奖,水星的表面温度约为 427°C。">示例 2</span>
@@ -66,7 +67,13 @@
     btn.addEventListener('click', async () => {
       const text = input.value.trim();
       if (!text) { status.textContent = '请输入内容'; return; }
-      btn.disabled = true; status.textContent = '正在拆事实点 + 联网核查 (最多 ~10 秒)...'; table.style.display='none'; summary.innerHTML=''; tbody.innerHTML='';
+      const originalLabel = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '核查中...';
+      status.textContent = '正在拆事实点 + 联网核查 (最多 ~10 秒)...';
+      table.style.display = 'none';
+      summary.innerHTML = '';
+      tbody.innerHTML = '';
       try {
         const resp = await fetch('/api/check', {
           method: 'POST',
@@ -81,17 +88,18 @@
         const verified = results.filter(r => r.status === 'verified').length;
         const unverified = results.filter(r => r.status === 'unverified').length;
         const unknown = results.filter(r => r.status === 'unknown').length;
-        summary.innerHTML = `<div class="summary">✅ 有证据 ${verified} 条 · 🔴 无证据 ${unverified} 条 · ⚪ 未知 ${unknown} 条</div>`;
+        summary.innerHTML = '<div class="summary">✅ 有证据 ' + verified + ' 条 · 🔴 无证据 ' + unverified + ' 条 · ⚪ 未知 ' + unknown + ' 条</div>';
         results.forEach(r => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${r.claim}</td><td><span class="${badgeClass(r.status)}">${badgeText(r.status)}</span></td><td>${r.evidence || '-'}</td>`;
+          tr.innerHTML = '<td>' + r.claim + '</td><td><span class="' + badgeClass(r.status) + '">' + badgeText(r.status) + '</span></td><td>' + (r.evidence || '-') + '</td>';
           tbody.appendChild(tr);
         });
         table.style.display = '';
       } catch (err) {
-        status.textContent = '请求失败: ' + err.message;
+        status.textContent = '网络错误: ' + err.message + ' (请检查海外部署或代理)';
       } finally {
         btn.disabled = false;
+        btn.textContent = originalLabel;
       }
     });
   </script>

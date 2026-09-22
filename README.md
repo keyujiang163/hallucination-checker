@@ -33,6 +33,17 @@ npm start
 ```
 访问 http://localhost:3737
 
+## Limitations
+
+### Network access
+- **Mainland China users**: `api.duckduckgo.com` is DNS-hijacked to Facebook/Twitter IPs by the GFW. The default DDG provider will hang/fail with `connect ETIMEDOUT` errors even with 30s timeout + retry.
+- **Fix options**: (a) deploy overseas (AWS Tokyo, Vercel, Render free tier), (b) configure system HTTPS proxy, (c) switch to a paid provider (Brave / Tavily) that has reachable IPs.
+- Wikipedia API has the same issue; this build intentionally disables it.
+
+### LLM
+- Default splitter is rule-based (sentence boundaries + stopword filter). LLM splitting requires `LLM_API_KEY` with quota.
+- Current test env reports `base_resp: 2049` from MiniMax — likely quota exhausted. Use a paid MiniMax tier or switch `LLM_MODEL` to another OpenAI-compatible provider.
+
 ## API
 
 ### GET /api/health
@@ -57,6 +68,13 @@ npm start
 老板自己 `npm start` 跑就行。零成本。
 后续接 SerpAPI / Google CSE 升级搜索质量。
 生产化时建议:加 Redis 缓存、加请求队列、加用户认证。
+
+### Docker
+```bash
+docker build -t hallucination-checker .
+docker run -p 3737:3737 -e SEARCH_PROVIDER=brave -e BRAVE_API_KEY=... hallucination-checker
+```
+Deploy overseas (Render/Railway/Fly.io) to avoid mainland China DNS hijack.
 
 ## 变现点 (B 端 SaaS 299 元/月)
 
@@ -83,4 +101,14 @@ npm start
 - [ ] 用户系统 + 计费
 
 ## License
-MIT
+MIT © 2026 keyujiang163
+
+## Adding a search provider
+
+Edit `searchProviders.js`:
+1. Implement `async function searchXxx(claim)` returning `{hasEvidence, evidence}` (throw on unrecoverable error).
+2. Add to dispatch map in `searchWithProvider`.
+3. Update `.env.example` with new key (if needed).
+4. Restart server.
+
+Total ~5 lines per provider. See `searchDDG` for the canonical retry + timeout pattern.

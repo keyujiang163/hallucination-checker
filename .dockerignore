@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.env
+hc_key.txt
+*.log
+.git
+.gitignore
+req*.json
+test-*.js
+write-req.js
+data/
