@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30 个 AI 实战 Skill 包 · OpenClaw</title>
+<style>
+:root { --bg: #0a0e27; --fg: #e8eaff; --muted: #9aa3d4; --card: #141a3a; --accent: #6c5ce7; --accent2: #a29bfe; --border: #2a3158; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.6; padding: 40px 20px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+.hero { text-align: center; margin-bottom: 50px; padding: 60px 20px; background: linear-gradient(135deg, #1a1f4a, #141a3a); border-radius: 16px; border: 1px solid var(--border); }
+.hero h1 { font-size: 42px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 16px; }
+.hero p { color: var(--muted); font-size: 18px; max-width: 700px; margin: 0 auto; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; margin-top: 30px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; transition: all .2s; }
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.card .emoji { font-size: 30px; margin-bottom: 10px; }
+.card h3 { font-size: 17px; margin-bottom: 8px; color: var(--accent2); }
+.card .desc { font-size: 14px; color: var(--fg); margin-bottom: 12px; min-height: 40px; }
+.card .tag { display: inline-block; padding: 3px 10px; background: rgba(108, 92, 231, .2); color: var(--accent2); border-radius: 12px; font-size: 11px; margin-right: 6px; }
+.card .price { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.card .status { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+.card .status.done { background: #00b894; color: #fff; }
+.card .status.soon { background: #636e72; color: #fff; }
+h2 { font-size: 24px; margin: 40px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+@media (max-width: 768px) { .hero h1 { font-size: 30px; } .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>30 个 AI 实战 Skill 包</h1>
+    <p>从 OpenClaw 真实生产环境提炼的 30 个真有用工具 —— 不是凑数,是每天在跑的生产脚本。</p>
+  </div>
+
+  <h2>🟢 第一批(已上线 · 5 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">📣</div><h3>boss-secretary<span class="status done">已上线</span></h3><div class="desc">主动推送老板日报,告别沉默过头 —— 飞书 webhook 一键喊。</div><span class="tag">OpenClaw</span><div class="price">¥49 一次性 / 免费试用</div></div>
+    <div class="card"><div class="emoji">🔍</div><h3>openclaw-audit<span class="status done">已上线</span></h3><div class="desc">spawn 日志强制 + 死因判定,救回翻车子代理。</div><span class="tag">开发者</span><div class="price">¥49 / ¥19/月</div></div>
+    <div class="card"><div class="emoji">⏱️</div><h3>dev-runner<span class="status done">已上线</span></h3><div class="desc">子代理防超时包装,25min 顶位到点自动写日志。</div><span class="tag">开发者</span><div class="price">¥49 / ¥19/月</div></div>
+    <div class="card"><div class="emoji">🚦</div><h3>subagent-budget<span class="status done">已上线</span></h3><div class="desc">并发上限护栏,撞平台硬限前自动排队。</div><span class="tag">开发者</span><div class="price">¥29 一次性</div></div>
+    <div class="card"><div class="emoji">🔐</div><h3>env-vault<span class="status done">已上线</span></h3><div class="desc">凭据安全管理,飞书群永不发明文。</div><span class="tag">开发者</span><div class="price">¥99 / ¥29/月</div></div>
+  </div>
+
+  <h2>🟡 飞书办公(规划中 · 8 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">📝</div><h3>lark-meeting-summary<span class="status soon">规划</span></h3><div class="desc">会议纪要一键成稿。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">⏰</div><h3>lark-attendance-checkin<span class="status soon">规划</span></h3><div class="desc">跨时区打卡不出错。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">🎯</div><h3>lark-okr-progress<span class="status soon">规划</span></h3><div class="desc">OKR 进度周报。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">📋</div><h3>lark-task-triage<span class="status soon">规划</span></h3><div class="desc">任务智能拆解 + 委派。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">🌐</div><h3>lark-doc-translate<span class="status soon">规划</span></h3><div class="desc">飞书文档多语翻译。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">📊</div><h3>lark-sheet-formula<span class="status soon">规划</span></h3><div class="desc">公式救星(中文描述转公式)。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">✉️</div><h3>lark-mail-draft<span class="status soon">规划</span></h3><div class="desc">邮件起草 + 多版本。</div><span class="tag">飞书</span></div>
+    <div class="card"><div class="emoji">🤖</div><h3>lark-approval-bot<span class="status soon">规划</span></h3><div class="desc">审批代办自动审。</div><span class="tag">飞书</span></div>
+  </div>
+
+  <h2>🟡 内容创作(规划中 · 6 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">📰</div><h3>wechat-article-writer<span class="status soon">规划</span></h3><div class="desc">公众号爆款模板。</div><span class="tag">创作</span></div>
+    <div class="card"><div class="emoji">🌺</div><h3>xhs-note-generator<span class="status soon">规划</span></h3><div class="desc">小红书种草模板。</div><span class="tag">创作</span></div>
+    <div class="card"><div class="emoji">🎬</div><h3>youtube-script<span class="status soon">规划</span></h3><div class="desc">YouTube 视频脚本。</div><span class="tag">创作</span></div>
+    <div class="card"><div class="emoji">🎙️</div><h3>podcast-shownotes<span class="status soon">规划</span></h3><div class="desc">播客 shownotes。</div><span class="tag">创作</span></div>
+    <div class="card"><div class="emoji">🐦</div><h3>tweet-thread<span class="status soon">规划</span></h3><div class="desc">推特长帖链。</div><span class="tag">创作</span></div>
+    <div class="card"><div class="emoji">📧</div><h3>newsletter-digest<span class="status soon">规划</span></h3><div class="desc">周报邮件摘要。</div><span class="tag">创作</span></div>
+  </div>
+
+  <h2>🟡 开发者工具(规划中 · 8 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">🔧</div><h3>git-commit-msg<span class="status soon">规划</span></h3><div class="desc">Conventional Commits 自动。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">🐳</div><h3>dockerfile-linter<span class="status soon">规划</span></h3><div class="desc">Dockerfile 体检。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">📚</div><h3>api-doc-gen<span class="status soon">规划</span></h3><div class="desc">OpenAPI 自动文档。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">🔍</div><h3>log-explainer<span class="status soon">规划</span></h3><div class="desc">报错日志一键人话。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">📦</div><h3>package-bump<span class="status soon">规划</span></h3><div class="desc">依赖版本自动升级。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">🧪</div><h3>test-flake-hunter<span class="status soon">规划</span></h3><div class="desc">flaky test 自动识别。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">🔄</div><h3>ci-cache-warmer<span class="status soon">规划</span></h3><div class="desc">CI cache 预热。</div><span class="tag">开发者</span></div>
+    <div class="card"><div class="emoji">📝</div><h3>changelog-gen<span class="status soon">规划</span></h3><div class="desc">CHANGELOG 自动生成。</div><span class="tag">开发者</span></div>
+  </div>
+
+  <h2>🟡 商业变现(规划中 · 5 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">💼</div><h3>pricing-calculator<span class="status soon">规划</span></h3><div class="desc">SaaS 定价计算器。</div><span class="tag">变现</span></div>
+    <div class="card"><div class="emoji">🎯</div><h3>landing-copywriter<span class="status soon">规划</span></h3><div class="desc">landing 页文案生成。</div><span class="tag">变现</span></div>
+    <div class="card"><div class="emoji">📰</div><h3>hn-post-drafter<span class="status soon">规划</span></h3><div class="desc">HN Show HN 文案。</div><span class="tag">变现</span></div>
+    <div class="card"><div class="emoji">💳</div><h3>stripe-test-helper<span class="status soon">规划</span></h3><div class="desc">Stripe test mode 全流程。</div><span class="tag">变现</span></div>
+    <div class="card"><div class="emoji">📈</div><h3>conversion-funnel<span class="status soon">规划</span></h3><div class="desc">转化漏斗分析。</div><span class="tag">变现</span></div>
+  </div>
+
+  <h2>🟡 日常效率(规划中 · 3 个)</h2>
+  <div class="grid">
+    <div class="card"><div class="emoji">📅</div><h3>weekly-review<span class="status soon">规划</span></h3><div class="desc">周复盘自动生成。</div><span class="tag">效率</span></div>
+    <div class="card"><div class="emoji">📥</div><h3>inbox-triage<span class="status soon">规划</span></h3><div class="desc">邮件/消息三色分流。</div><span class="tag">效率</span></div>
+    <div class="card"><div class="emoji">⏳</div><h3>pomodoro-tracker<span class="status soon">规划</span></h3><div class="desc">番茄钟自动记录。</div><span class="tag">效率</span></div>
+  </div>
+
+  <div style="text-align:center; margin-top:60px; padding:30px; color:var(--muted); font-size:13px;">
+    🎯 目标 2 天 30 个 · 已交付 5 个 · 实时进度更新中
+  </div>
+</div>
+</body>
+</html>
